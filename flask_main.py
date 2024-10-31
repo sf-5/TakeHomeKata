@@ -73,3 +73,30 @@ def quiz_completed():
     quiz_size = session["quiz_size"]
     print(session["questions_list"])
     return render_template("quiz_completed.html", correct=correct, quiz_size=quiz_size)
+
+@app.route("/create-quiz", methods=["GET", "POST"])
+def create_quiz():
+    size = int(request.form.get("size"))
+    return render_template("create_quiz.html", size=size)
+
+@app.route("/create-quiz-reroute", methods=["GET", "POST"])
+def create_quiz_reroute():
+    size = int(request.form.get("size"))
+    questions = []
+    for i in range(size):
+        new_question = {"question": request.form.get(f"question_{i}"), 
+                        "correct": request.form.get(f"correct_{i}"), 
+                        "incorrect": [request.form.get(f"incorrect1_{i}"), request.form.get(f"incorrect2_{i}"), request.form.get(f"incorrect3_{i}")]}
+        if new_question[4] == "":
+            new_question.pop(4)
+        if new_question[3] == "":
+            new_question.pop(3)
+        for item in new_question:
+            if item == "":
+                return redirect(url_for('create_quiz'))
+            
+        print(new_question)
+        questions.append(new_question)
+
+    print(questions)
+    return redirect(url_for('home'))

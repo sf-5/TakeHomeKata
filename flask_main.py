@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from requests import get
 from html import unescape
 from random import shuffle
+import sqlite3
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
@@ -84,19 +85,23 @@ def create_quiz_reroute():
     size = int(request.form.get("size"))
     questions = []
     for i in range(size):
-        new_question = {"question": request.form.get(f"question_{i}"), 
-                        "correct": request.form.get(f"correct_{i}"), 
-                        "incorrect": [request.form.get(f"incorrect1_{i}"), request.form.get(f"incorrect2_{i}"), request.form.get(f"incorrect3_{i}")]}
-        if new_question[4] == "":
-            new_question.pop(4)
-        if new_question[3] == "":
-            new_question.pop(3)
-        for item in new_question:
-            if item == "":
+        new_question = [request.form.get(f"question_{i}"), 
+                        request.form.get(f"correct_{i}"), 
+                        request.form.get(f"incorrect1_{i}"), 
+                        request.form.get(f"incorrect2_{i}"), 
+                        request.form.get(f"incorrect3_{i}")]
+
+        for i in range(3):
+            if new_question[i] == "":
                 return redirect(url_for('create_quiz'))
             
-        print(new_question)
         questions.append(new_question)
 
-    print(questions)
+    connection = sqlite3.connect("user_quizzes.db")
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO Quizzes VALUES (?, ?, ?, ?, ?)", new_question)
+    cursor.close()
+    connection.commit()
+    connection.close()
+
     return redirect(url_for('home'))

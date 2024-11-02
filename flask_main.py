@@ -77,31 +77,39 @@ def quiz_completed():
 
 @app.route("/create-quiz", methods=["GET", "POST"])
 def create_quiz():
-    size = int(request.form.get("size"))
-    return render_template("create_quiz.html", size=size)
+    session["new_quiz_size"] = int(request.form.get("size"))
+    return render_template("create_quiz.html", size=session["new_quiz_size"])
 
 @app.route("/create-quiz-reroute", methods=["GET", "POST"])
 def create_quiz_reroute():
-    size = int(request.form.get("size"))
-    questions = []
-    for i in range(size):
-        new_question = [request.form.get(f"question_{i}"), 
-                        request.form.get(f"correct_{i}"), 
-                        request.form.get(f"incorrect1_{i}"), 
-                        request.form.get(f"incorrect2_{i}"), 
-                        request.form.get(f"incorrect3_{i}")]
-
-        for i in range(3):
-            if new_question[i] == "":
-                return redirect(url_for('create_quiz'))
-            
-        questions.append(new_question)
+    size = session["new_quiz_size"]
 
     connection = sqlite3.connect("user_quizzes.db")
     cursor = connection.cursor()
-    cursor.execute("INSERT INTO Quizzes VALUES (?, ?, ?, ?, ?)", new_question)
+    quiz_id = cursor.execute("SELECT MAX(QuizID) FROM Quizzes").fetchone()[0] + 1
     cursor.close()
     connection.commit()
     connection.close()
 
-    return redirect(url_for('home'))
+    for i in range(size):
+        new_question = request.form.get(f"question_{i}")
+        new_correct = request.form.get(f"correct_{i}")
+        new_incorrect1 = request.form.get(f"incorrect1_{i}")
+
+        if new_question == "" or new_correct == "" or new_incorrect1 == "":
+            return redirect(url_for('create_quiz'))
+
+        question = [new_question, new_correct, new_incorrect1, request.form.get(f"incorrect2_{i}"), request.form.get(f"incorrect3_{i}"), quiz_id]
+        
+        connection = sqlite3.connect("user_quizzes.db")
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO Quizzes (Question, CorrectAnswer, IncorrectAnswer1, IncorrectAnswer2, IncorrectAnswer3, QuizID) VALUES (?, ?, ?, ?, ?, ?)", question)
+        cursor.close()
+        connection.commit()
+        connection.close()
+
+    return render_template("create_quiz_reroute.html", code=quiz_id)
+
+@app.route("/custom-quiz", methods=["GET", "POST"])
+def custom_quiz():
+    pass

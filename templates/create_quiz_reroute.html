@@ -8,9 +8,10 @@
   </head>
   <body>
     <div class="container min-vh-100  align-content-center justify-content-center text-center">
+        <h5>Thank you for creating a quiz!</h5>
+        <p>If you want to share it with your friends, tell them to use code {{ code }}</p>
         <form action="{{ url_for('home') }}">
-            <h5>You scored {{ correct }} out of {{ quiz_size }}. Take another quiz?</h5><br>
-            <button type="submit" class="btn btn-primary">New Quiz</button>
+          <button type="submit" class="btn btn-primary">New Quiz</button>
         </form>
     </div>
   </body>

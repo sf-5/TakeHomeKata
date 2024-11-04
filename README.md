@@ -1,6 +1,4 @@
 # TakeHomeKata
 A coding challenge for my Direct Supply Software Engineer Intership application.
 
-Step 1: Create functionality for playing one quiz. **Currently working on this.**
-Step 2: Create functionality for users to play over and over.
-Step 3: Add options for users to pick difficulty and category.
+Users can take quizzes pulled from an API, with a category, difficulty, and length of their choosing. Users can also create and share quizzes. Type in the friend code "1" to see an example quiz I created with this tool.

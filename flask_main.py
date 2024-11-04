@@ -56,14 +56,20 @@ def quizReroute():
 @app.route("/quiz", methods=["GET", "POST"])
 def quiz():
     if request.method == "POST":
-        if request.form.get("flexRadioDefault") == session["questions_list"][session["index"]]["correct_answer"]:
+        answer = request.form.get("flexRadioDefault")
+        answer_index = session["questions_list"][session["index"]]["answers"].index(answer)
+        if answer == session["questions_list"][session["index"]]["correct_answer"]:
             session["correct"] += 1
+            session["questions_list"][session["index"]]["answers"][answer_index] += unescape(" &#9989;")
+        else:
+            correct_index = session["questions_list"][session["index"]]["answers"].index(session["questions_list"][session["index"]]["correct_answer"])
+            session["questions_list"][session["index"]]["answers"][correct_index] += unescape(" &larr; Correct")
+            session["questions_list"][session["index"]]["answers"][answer_index] += unescape(" &#10060;")
 
         session["index"] += 1
 
-        if session["index"] == session["quiz_size"]:
-            return redirect(url_for("quiz_completed"))
-        
+    if session["index"] == session["quiz_size"]:
+        return redirect(url_for("quiz_completed"))
 
     question_dict = session["questions_list"][session["index"]]
     return render_template("quiz.html", question_dict=question_dict)
@@ -72,8 +78,8 @@ def quiz():
 def quiz_completed():
     correct = session["correct"]
     quiz_size = session["quiz_size"]
-    print(session["questions_list"])
-    return render_template("quiz_completed.html", correct=correct, quiz_size=quiz_size)
+    questions_list = session["questions_list"]
+    return render_template("quiz_completed.html", correct=correct, quiz_size=quiz_size, questions_list=questions_list)
 
 @app.route("/create-quiz", methods=["GET", "POST"])
 def create_quiz():
@@ -110,6 +116,43 @@ def create_quiz_reroute():
 
     return render_template("create_quiz_reroute.html", code=quiz_id)
 
-@app.route("/custom-quiz", methods=["GET", "POST"])
-def custom_quiz():
-    pass
+@app.route("/custom-quiz-reroute", methods=["GET", "POST"])
+def custom_quiz_reroute():
+    quiz_id = int(request.form.get("code"))
+    
+    connection = sqlite3.connect("user_quizzes.db")
+    cursor = connection.cursor()
+    questions_dirty = cursor.execute("SELECT * FROM Quizzes WHERE QuizID = ?", (quiz_id,)).fetchall()
+    cursor.close()
+    connection.commit()
+    connection.close()
+    
+    questions_list = []
+    for question in questions_dirty:
+        new_dict = {}
+
+        # These variables stay the same, but some HTML codes need to be converted to normal text.
+        new_dict["question"] = question[1]
+        new_dict["correct_answer"] = question[2]
+
+        # The correct answer is be inserted into the incorrect answers and shuffled. These also need to be converted to normal text.
+        answers = list(question[3:6])
+        answers.append(new_dict["correct_answer"])
+        shuffle(answers)
+
+        # Adds the reformatted question to the list of questions.
+        new_dict["answers"] = answers
+
+        while "" in answers:
+            answers.remove("")
+
+        questions_list.append(new_dict)
+
+    # This adds the questions to the session, so they will be remembered, along with the current question index and the number of correct answers.
+    session["questions_list"] = questions_list
+    session["index"] = 0
+    session["correct"] = 0
+    session["quiz_size"] = len(questions_dirty)
+
+    # Redirects to the quiz page, which will cycle through questions until all ten questions have been answered.
+    return redirect(url_for('quiz'))
